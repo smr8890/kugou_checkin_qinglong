@@ -1,13 +1,13 @@
-# 酷狗概念版签到（青龙）
+# 酷狗签到（青龙）
 
 在青龙面板中完成酷狗概念版（`lite`）或标准平台的**扫码登录**与**每日签到**。脚本会在本机自动安装固定版本的 [KuGouMusicApi](https://github.com/MakcRe/KuGouMusicApi)，以进程内方式调用，不需要额外部署 API 容器。
 
 ## 功能
 
 - 青龙订阅拉库后自动创建 3 个任务：
-  - 酷狗扫码登录（含 API 安装）
-  - 酷狗概念版签到
-  - 酷狗卸载清理（手动运行）
+  - 酷狗扫码登录
+  - 酷狗签到
+  - 酷狗卸载清理
 - token 只存青龙环境变量 `KUGOU_ACCOUNTS`，刷新后通过青龙内置 `QLAPI` 写回
 - 多账号：每扫一次码添加一个账号，按 `userid` 去重
 - 每日领取畅听 VIP、升级概念 VIP、查询 VIP 到期时间
@@ -79,7 +79,7 @@ ql repo https://github.com/<你的用户名>/kugou-sign.git "kugou_sign.js|kugou
 ## 首次扫码登录
 
 1. 打开青龙「任务管理」
-2. 运行「酷狗扫码登录（含 API 安装）」
+2. 运行「酷狗扫码登录」
 3. 首次运行会自动下载并安装 KuGouMusicApi（需要几分钟）
 4. 日志中会出现终端二维码、二维码链接，并保存到 `/ql/data/kugouApi/qr.png`
 5. 使用酷狗 App 扫码并确认
@@ -88,7 +88,7 @@ ql repo https://github.com/<你的用户名>/kugou-sign.git "kugou_sign.js|kugou
 
 ## 添加多个账号
 
-再次运行「酷狗扫码登录（含 API 安装）」并扫码即可。脚本按 `userid` 去重：
+再次运行「酷狗扫码登录」并扫码即可。脚本按 `userid` 去重：
 
 - 同一账号重复扫码：更新 token
 - 不同账号：追加到数组
@@ -97,7 +97,7 @@ ql repo https://github.com/<你的用户名>/kugou-sign.git "kugou_sign.js|kugou
 
 ## 每日签到
 
-「酷狗概念版签到」任务默认每天 `07:17` 执行，依次调用：
+「酷狗签到」任务默认每天 `07:17` 执行，依次调用：
 
 - `/user/detail`
 - `/youth/day/vip`
@@ -127,7 +127,7 @@ HITOKOTO=true
 KUGOU_ACCOUNTS 环境变量
 ```
 
-因此删除订阅前请先运行「酷狗卸载清理（手动运行）」。
+因此删除订阅前请先运行「酷狗卸载清理」。
 
 默认行为：删除 API 运行时、`qr.png`、安装锁，保留：
 
@@ -147,7 +147,7 @@ task <uniq_path>/kugou_uninstall.js -- --purge
 推荐顺序：
 
 ```text
-1. 运行「酷狗卸载清理（手动运行）」
+1. 运行「酷狗卸载清理」
 2. 确认 /ql/data/kugouApi 已清理
 3. 到订阅管理删除本仓库订阅
 4. 到任务管理删除残留任务
@@ -165,7 +165,7 @@ rm -rf /ql/data/kugouApi
 
 ### 未找到酷狗账号
 
-先运行「酷狗扫码登录（含 API 安装）」并扫码。签到任务在无账号时不会安装 API，也不会发送失败通知。
+先运行「酷狗扫码登录」并扫码。签到任务在无账号时不会安装 API，也不会发送失败通知。
 
 ### QLAPI 不可用
 

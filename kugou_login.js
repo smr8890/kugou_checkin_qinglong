@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-// new Env('酷狗扫码登录（含 API 安装）')
+// new Env('酷狗扫码登录')
 // cron: 0 0 29 2 *
 
 const { run } = require('./kugou_sign.js');

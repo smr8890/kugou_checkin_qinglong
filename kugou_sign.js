@@ -1,11 +1,11 @@
 #!/usr/bin/env node
-// new Env('酷狗概念版签到')
+// new Env('酷狗签到')
 // cron: 17 7 * * *
 
 'use strict';
 
 /**
- * 酷狗概念版签到（青龙版）
+ * 酷狗签到（青龙版）
  *
  *  - token 只存青龙环境变量 KUGOU_ACCOUNTS
  *  - 通过青龙内置全局 QLAPI 读写环境变量
@@ -1384,7 +1384,7 @@ async function login() {
       `登录成功：${accountLabel(account)}，token ${maskToken(account.token)}`,
     );
     log(`KUGOU_ACCOUNTS 现有 ${merged.length} 个账号`);
-    log('如需继续添加账号，请重新运行「酷狗扫码登录（含 API 安装）」任务。');
+    log('如需继续添加账号，请重新运行「酷狗扫码登录」任务。');
 
     await notify(
       '酷狗扫码登录成功',
@@ -1603,7 +1603,7 @@ async function sign() {
 
   if (!accounts.length) {
     log('未找到酷狗账号。');
-    log('请到青龙「任务管理」找到「酷狗扫码登录（含 API 安装）」任务，点击运行并扫码。');
+    log('请到青龙「任务管理」找到「酷狗扫码登录」任务，点击运行并扫码。');
     return 0;
   }
 
