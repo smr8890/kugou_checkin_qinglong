@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // new Env('酷狗卸载清理')
-// cron: 0 0 29 2 *
+// cron: @once
 
 const { run } = require('./kugou_sign.js');
 
