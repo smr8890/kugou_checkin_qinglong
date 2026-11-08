@@ -1549,23 +1549,32 @@ async function signAccount(api, util, device, account, today, index, total) {
   return result;
 }
 
+function compactSignLine(line) {
+  return String(line)
+    .replace(/^畅听 VIP：/, '畅听 ')
+    .replace(/^概念 VIP：/, '概念 ')
+    .replace(/^VIP 到期：/, 'VIP ')
+    .replace(/^账号状态：/, '')
+    .trim();
+}
+
 function buildSignNotification(today, results, writeBackError) {
-  const lines = [`【酷狗签到】${today}`];
   const success = results.filter((item) => item.ok).length;
   const failed = results.length - success;
+  const lines = [`【酷狗签到】${today}`];
 
-  results.forEach((item, index) => {
-    lines.push('');
-    lines.push(`账号 ${index + 1}/${results.length}：${accountLabel(item.account)}`);
-    for (const line of item.lines) lines.push(`  ${line}`);
-  });
+  for (const item of results) {
+    const details = item.lines
+      .map(compactSignLine)
+      .filter(Boolean)
+      .join('，');
+    lines.push(`${accountLabel(item.account)}：${details || (item.ok ? '成功' : '失败')}`);
+  }
 
-  lines.push('');
-  lines.push(`共 ${results.length} 个账号，成功 ${success}，失败 ${failed}`);
+  lines.push(`成功 ${success}，失败 ${failed}`);
 
   if (writeBackError) {
-    lines.push('');
-    lines.push(`token 写回环境变量失败：${writeBackError}`);
+    lines.push(`token 写回失败：${writeBackError}`);
   }
 
   return lines.join('\n');
