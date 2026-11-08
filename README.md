@@ -12,7 +12,7 @@
 - 多账号：每扫一次码添加一个账号，按 `userid` 去重
 - 每日领取畅听 VIP、升级概念 VIP、查询 VIP 到期时间
 - 支持 `KUGOU_PLATFORM=lite`（概念版）或留空（标准平台）
-- 结果通过青龙通知 / `sendNotify` 推送，日志自动脱敏
+- 结果仅通过青龙自动复制的 `sendNotify.js` 推送，日志自动脱敏
 - 提供 `--purge` 彻底清理账号与设备身份
 
 > **免责声明**：本项目使用非官方接口，仅供个人学习研究使用。请遵守酷狗用户协议，不要公开分享 token，不要用于商业用途。因使用本项目产生的任何后果由使用者自行承担。
@@ -105,6 +105,18 @@ ql repo https://github.com/<你的用户名>/kugou-sign.git "kugou_sign.js|kugou
 - `/user/vip/detail`
 
 已领取、已升级会视为成功，不会报错。token 超过 7 天会在签到前自动刷新，刷新结果写回 `KUGOU_ACCOUNTS`。
+
+## 通知
+
+仅使用青龙自动复制的 `sendNotify.js`，不再回退 `QLAPI.notify`；找不到 `sendNotify.js` 时只输出日志。
+
+通知渠道由青龙面板「通知设置」决定，脚本本身不指定渠道。
+
+`sendNotify.js` 默认启用「一言」（请求 `v1.hitokoto.cn`），该请求超时会导致整个通知中断。脚本在未显式配置 `HITOKOTO` 时会默认设为 `false`。如需恢复一言，请在青龙环境变量中添加：
+
+```text
+HITOKOTO=true
+```
 
 ## 卸载清理
 

@@ -1840,29 +1840,11 @@ function withTimeout(promise, ms, label) {
 }
 
 async function notify(title, content) {
-  const ql = globalThis.QLAPI;
+  // sendNotify 默认会请求 v1.hitokoto.cn 附加“一言”，该请求失败会导致整个通知中断。
+  // 未显式配置时默认关闭，避免无关的外部请求影响通知。
+  if (!process.env.HITOKOTO) process.env.HITOKOTO = 'false';
 
-  if (ql && typeof ql.notify === 'function') {
-    try {
-      // 通知失败或未配置渠道时不能阻塞签到任务
-      await withTimeout(
-        Promise.resolve().then(() => ql.notify(title, content)),
-        30 * 1000,
-        'QLAPI 通知',
-      );
-      return;
-    } catch (err) {
-      warn(`QLAPI 通知失败：${err && err.message ? err.message : err}`);
-      if (typeof ql.close === 'function') {
-        try {
-          ql.close();
-        } catch {
-          // 忽略关闭失败
-        }
-      }
-    }
-  }
-
+  // 只使用青龙自动复制的 sendNotify.js，不再回退 QLAPI.notify
   const mod = findSendNotify();
   const fn =
     typeof mod === 'function'
@@ -1871,20 +1853,21 @@ async function notify(title, content) {
         ? mod.sendNotify
         : null;
 
-  if (fn) {
-    try {
-      await withTimeout(
-        Promise.resolve().then(() => fn(title, content)),
-        30 * 1000,
-        'sendNotify 通知',
-      );
-      return;
-    } catch (err) {
-      warn(`sendNotify 通知失败：${err && err.message ? err.message : err}`);
-    }
+  if (!fn) {
+    log('未找到 sendNotify.js，仅输出日志。');
+    return;
   }
 
-  log('未找到可用的通知渠道，仅输出日志。');
+  try {
+    // 通知失败或未配置渠道时不能阻塞任务
+    await withTimeout(
+      Promise.resolve().then(() => fn(title, content)),
+      30 * 1000,
+      'sendNotify 通知',
+    );
+  } catch (err) {
+    warn(`sendNotify 通知失败：${err && err.message ? err.message : err}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
