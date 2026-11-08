@@ -1384,6 +1384,15 @@ async function login() {
     );
     log(`KUGOU_ACCOUNTS 现有 ${merged.length} 个账号`);
     log('如需继续添加账号，请重新运行「酷狗扫码登录」任务。');
+
+    try {
+      if (await safeRemove(QR_FILE)) {
+        log('已删除二维码文件');
+      }
+    } catch (err) {
+      warn(`删除二维码文件失败：${err && err.message ? err.message : err}`);
+    }
+
     return 0;
   } catch (err) {
     const message = err && err.message ? err.message : String(err);

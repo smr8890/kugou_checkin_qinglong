@@ -53,7 +53,7 @@ ql repo https://github.com/smr8890/kugou_checkin_qinglong.git "" "" "" "main"
 1. 打开青龙「任务管理」
 2. 运行「酷狗扫码登录」
 3. 首次运行会自动下载并安装 KuGouMusicApi（需要几分钟）
-4. 日志中会出现终端二维码、二维码链接，并保存到 `/ql/data/kugouApi/qr.png`
+4. 日志中会出现终端二维码、二维码链接，并保存到 `/ql/data/kugouApi/qr.png`（登录成功后自动删除）
 5. 使用酷狗 App 扫码并确认
 6. 登录成功后，账号自动写入 `KUGOU_ACCOUNTS`
 7. 登录完成后建议**禁用登录任务**，避免误触发
