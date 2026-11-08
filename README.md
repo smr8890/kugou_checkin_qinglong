@@ -58,6 +58,8 @@ ql repo https://github.com/smr8890/kugou_checkin_qinglong.git "" "" "" "main"
 6. 登录成功后，账号自动写入 `KUGOU_ACCOUNTS`
 7. 登录完成后建议**禁用登录任务**，避免误触发
 
+扫码登录过程只在日志中展示二维码和结果，不发送通知。
+
 ## 添加多个账号
 
 再次运行「酷狗扫码登录」并扫码即可。脚本按 `userid` 去重：

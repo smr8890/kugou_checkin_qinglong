@@ -1231,7 +1231,6 @@ async function login() {
     existingAccounts = parseAccounts(process.env[ENV_NAME]);
   } catch (err) {
     warn(err.message);
-    await notify('酷狗扫码登录失败', err.message).catch(() => {});
     return 1;
   }
 
@@ -1385,22 +1384,10 @@ async function login() {
     );
     log(`KUGOU_ACCOUNTS 现有 ${merged.length} 个账号`);
     log('如需继续添加账号，请重新运行「酷狗扫码登录」任务。');
-
-    await notify(
-      '酷狗扫码登录成功',
-      [
-        `账号：${accountLabel(account)}`,
-        `token：${maskToken(account.token)}`,
-        `当前共 ${merged.length} 个账号`,
-        '',
-        '如需添加更多账号，请再次运行登录任务。',
-      ].join('\n'),
-    );
     return 0;
   } catch (err) {
     const message = err && err.message ? err.message : String(err);
     warn(`登录失败：${message}`);
-    await notify('酷狗扫码登录失败', message).catch(() => {});
     return 1;
   }
 }
