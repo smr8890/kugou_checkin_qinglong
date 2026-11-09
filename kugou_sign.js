@@ -1048,18 +1048,6 @@ function pickNickname(data, depth = 0) {
   return '';
 }
 
-const VIP_DATE_KEYS = [
-  'vip_end_time',
-  'vip_expire_time',
-  'vip_enddate',
-  'vip_due_date',
-  'expire_time',
-  'end_time',
-  'expired_at',
-  'expire_at',
-  'due_date',
-];
-
 function formatTimestamp(value) {
   const ms = value > 1e12 ? value : value * 1000;
   const date = new Date(ms + BEIJING_OFFSET);
@@ -1067,56 +1055,54 @@ function formatTimestamp(value) {
   return date.toISOString().slice(0, 10);
 }
 
+function validVipDate(text) {
+  if (!text || !/^\d{4}-\d{2}-\d{2}$/.test(text)) return null;
+  if (text.startsWith('0000')) return null;
+  const time = new Date(`${text}T00:00:00Z`).getTime();
+  if (Number.isNaN(time)) return null;
+  return text;
+}
+
 function parseVipDate(value) {
   if (value === undefined || value === null || value === '') return null;
 
   if (typeof value === 'string') {
     const text = value.trim();
-    if (/^\d{4}-\d{2}-\d{2}/.test(text)) return text.slice(0, 10);
+    if (/^\d{4}-\d{2}-\d{2}/.test(text)) return validVipDate(text.slice(0, 10));
     if (/^\d{8}$/.test(text)) {
-      return `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
+      return validVipDate(
+        `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`,
+      );
     }
-    if (/^\d{10,13}$/.test(text)) return formatTimestamp(Number(text));
+    if (/^\d{10,13}$/.test(text)) {
+      return validVipDate(formatTimestamp(Number(text)));
+    }
     return null;
   }
 
   if (typeof value === 'number' && Number.isFinite(value) && value > 0) {
     if (value >= 19000101 && value <= 29991231) {
       const text = String(Math.trunc(value));
-      return `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`;
+      return validVipDate(
+        `${text.slice(0, 4)}-${text.slice(4, 6)}-${text.slice(6, 8)}`,
+      );
     }
-    return formatTimestamp(value);
+    return validVipDate(formatTimestamp(value));
   }
 
   return null;
 }
 
-function findVipExpire(value, depth = 0) {
-  if (value === undefined || value === null || depth > 6) return null;
+function extractBusiVipEnd(data) {
+  // 与 KuSign-Plugin 保持一致：只取 data.busi_vip[0].vip_end_time
+  const rows = data && Array.isArray(data.busi_vip) ? data.busi_vip : [];
+  const first = rows[0];
+  if (!first) return null;
 
-  if (Array.isArray(value)) {
-    for (const item of value) {
-      const found = findVipExpire(item, depth + 1);
-      if (found) return found;
-    }
-    return null;
-  }
+  const raw = first.vip_end_time;
+  if (raw === undefined || raw === null || raw === '') return null;
 
-  if (typeof value !== 'object') return null;
-
-  for (const key of VIP_DATE_KEYS) {
-    if (Object.prototype.hasOwnProperty.call(value, key)) {
-      const found = parseVipDate(value[key]);
-      if (found) return found;
-    }
-  }
-
-  for (const child of Object.values(value)) {
-    const found = findVipExpire(child, depth + 1);
-    if (found) return found;
-  }
-
-  return null;
+  return parseVipDate(raw) || String(raw).trim() || null;
 }
 
 function isAlreadyMessage(message, kind) {
@@ -1459,6 +1445,8 @@ async function signAccount(api, util, device, account, today, index, total) {
     account,
     ok: false,
     lines: [],
+    vipExpire: null,
+    failReason: '',
   };
 
   log(`账号 ${index}/${total}：${accountLabel(account)}`);
@@ -1486,7 +1474,8 @@ async function signAccount(api, util, device, account, today, index, total) {
   }
 
   if (!detail.ok) {
-    result.lines.push('账号状态：token 失效，请重新扫码登录');
+    result.failReason = 'token 失效，请重新扫码登录';
+    result.lines.push(`账号状态：${result.failReason}`);
     log(result.lines[result.lines.length - 1]);
     return result;
   }
@@ -1515,8 +1504,9 @@ async function signAccount(api, util, device, account, today, index, total) {
   }
 
   if (vipResult.risk || vipResult.auth) {
+    result.failReason = `畅听 VIP：${vipResult.text}`;
     result.lines.push(`概念 VIP：跳过（${vipResult.risk ? '风控' : 'token 失效'}）`);
-    result.lines.push('VIP 到期：跳过');
+    result.lines.push('VIP到期时间：跳过');
     log(result.lines.slice(-3).join('；'));
     return result;
   }
@@ -1533,38 +1523,30 @@ async function signAccount(api, util, device, account, today, index, total) {
   result.lines.push(`概念 VIP：${upgradeResult.text}`);
   if (!upgradeResult.ok) logRawResponse('youth/day/vip/upgrade', upgradeNorm.body);
 
-  // 3) VIP 到期时间（仅展示，不影响签到结果）
+  // 3) 签到奖励 VIP 到期时间（与 KuSign-Plugin 相同：data.busi_vip[0].vip_end_time）
   log('查询 VIP 到期时间 ...');
   const vipDetailNorm = await apiCall(api.user_vip_detail, 'user/vip/detail', {
     token: account.token,
     userid: account.userid,
     cookie,
   });
-  const expire =
-    Number(vipDetailNorm.body.status) === 1
-      ? findVipExpire(vipDetailNorm.body.data)
-      : null;
-  if (expire) {
-    result.lines.push(`VIP 到期：${expire}`);
-  } else if (Number(vipDetailNorm.body.status) !== 1) {
-    result.lines.push(
-      `VIP 到期：获取失败${bodyMessage(vipDetailNorm.body) ? `（${bodyMessage(vipDetailNorm.body)}）` : ''}`,
-    );
+
+  if (Number(vipDetailNorm.body.status) === 1) {
+    result.vipExpire = extractBusiVipEnd(vipDetailNorm.body.data) || '未获取';
+  } else {
+    result.vipExpire = '获取失败';
   }
+  result.lines.push(`VIP到期时间：${result.vipExpire}`);
 
   result.ok = vipResult.ok && upgradeResult.ok;
+  if (!vipResult.ok) {
+    result.failReason = `畅听 VIP：${vipResult.text}`;
+  } else if (!upgradeResult.ok) {
+    result.failReason = `概念 VIP：${upgradeResult.text}`;
+  }
 
   for (const line of result.lines) log(`  ${line}`);
   return result;
-}
-
-function compactSignLine(line) {
-  return String(line)
-    .replace(/^畅听 VIP：/, '畅听 ')
-    .replace(/^概念 VIP：/, '概念 ')
-    .replace(/^VIP 到期：/, 'VIP ')
-    .replace(/^账号状态：/, '')
-    .trim();
 }
 
 function buildSignNotification(today, results, writeBackError) {
@@ -1573,11 +1555,16 @@ function buildSignNotification(today, results, writeBackError) {
   const lines = [`【酷狗签到】${today}`];
 
   for (const item of results) {
-    const details = item.lines
-      .map(compactSignLine)
-      .filter(Boolean)
-      .join('，');
-    lines.push(`${accountLabel(item.account)}：${details || (item.ok ? '成功' : '失败')}`);
+    const label = accountLabel(item.account);
+    if (item.ok) {
+      lines.push(
+        `${label}：签到成功，VIP到期时间：${item.vipExpire || '未知'}`,
+      );
+    } else {
+      lines.push(
+        `${label}：签到失败${item.failReason ? `，${item.failReason}` : ''}`,
+      );
+    }
   }
 
   lines.push(`成功 ${success}，失败 ${failed}`);
@@ -1659,6 +1646,8 @@ async function sign() {
           account,
           ok: false,
           lines: [`处理异常：${message}`],
+          vipExpire: null,
+          failReason: message,
         });
         pendingUpdates.push(account);
       }
