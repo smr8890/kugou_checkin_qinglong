@@ -1549,10 +1549,10 @@ async function signAccount(api, util, device, account, today, index, total) {
   return result;
 }
 
-function buildSignNotification(today, results, writeBackError) {
+function buildSignNotification(results, writeBackError) {
   const success = results.filter((item) => item.ok).length;
   const failed = results.length - success;
-  const lines = [`【酷狗签到】${today}`];
+  const lines = [];
 
   for (const item of results) {
     const label = accountLabel(item.account);
@@ -1672,7 +1672,7 @@ async function sign() {
 
     await notify(
       '酷狗签到',
-      buildSignNotification(today, results, writeBackError),
+      buildSignNotification(results, writeBackError),
     );
     return 0;
   } catch (err) {
