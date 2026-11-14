@@ -584,6 +584,8 @@ async function saveAccounts(updates) {
     }
 
     const merged = mergeAccounts(latest, updates);
+    // 历史版本会记录 lastSignDate，写回时顺便清理掉
+    for (const account of merged) delete account.lastSignDate;
     const value = JSON.stringify(merged);
 
     if (env) {
@@ -1361,7 +1363,6 @@ async function login() {
           ? String(loginData.vip_token)
           : (previous && previous.vipToken) || '',
       lastRefresh: nowSeconds(),
-      lastSignDate: (previous && previous.lastSignDate) || '',
     };
 
     const merged = await saveAccounts([account]);
@@ -1499,10 +1500,6 @@ async function signAccount(api, util, device, account, today, index, total) {
   result.lines.push(`畅听 VIP：${vipResult.text}`);
   if (!vipResult.ok) logRawResponse('youth/day/vip', vipNorm.body);
 
-  if (vipResult.ok) {
-    account.lastSignDate = today;
-  }
-
   if (vipResult.risk || vipResult.auth) {
     result.failReason = `畅听 VIP：${vipResult.text}`;
     result.lines.push(`概念 VIP：跳过（${vipResult.risk ? '风控' : 'token 失效'}）`);
@@ -1627,6 +1624,7 @@ async function sign() {
 
     for (let i = 0; i < accounts.length; i += 1) {
       const account = accounts[i];
+      const before = JSON.stringify(account);
       try {
         const result = await signAccount(
           api,
@@ -1638,7 +1636,6 @@ async function sign() {
           accounts.length,
         );
         results.push(result);
-        pendingUpdates.push(account);
       } catch (err) {
         const message = err && err.message ? err.message : String(err);
         warn(`账号 ${accountLabel(account)} 处理异常：${message}`);
@@ -1649,6 +1646,10 @@ async function sign() {
           vipExpire: null,
           failReason: message,
         });
+      }
+
+      // 只有 token/资料真的变化时才写回；签到时间不再记录
+      if (JSON.stringify(account) !== before) {
         pendingUpdates.push(account);
       }
 
