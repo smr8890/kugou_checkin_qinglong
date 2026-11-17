@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // new Env('酷狗签到')
-// cron: 2 4 * * *
+// cron: 12 4 * * *
 
 'use strict';
 
